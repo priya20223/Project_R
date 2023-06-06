@@ -1,0 +1,164 @@
+---
+title: "Assignment-2"
+output:
+  word_document: default
+  html_document: default
+date: "5/28/2023"
+---
+
+Load the file in to a variable named data
+```{r}
+data <- read.csv(file = "opioid_dist_to_needle_exchange_2018.csv", header = TRUE, sep = ",")
+```
+Analysis of data
+```{r}
+summary(data)
+```
+# 1) Population mean and standard deviation of distance to needle exchange.
+
+Finding mean and standard deviation of the variable "VALUE" and storing the result in mean_dist, sd_dist
+```{r}
+mean_dist <- mean(data$VALUE)
+mean_dist
+```
+```{r}
+sd_dist <- sd(data$VALUE)
+sd_dist
+```
+
+# 2) Computing z-score for distance to needle exchange for St.Louis County
+
+Storing the details related to St.Louis County in a data frame and assigned that to a variable "St_Louis_County_data".
+```{r}
+St_Louis_County_data <- data.frame(
+  STATEFP = c(29),
+  COUNTYFP = c(189),
+  YEAR = c(2018),
+  INDICATOR = c("dist_SSP"),
+  VALUE = c(12.27),
+  STATE = c("Missouri"),
+  STATEABBREVIATION = c("MO"),
+  COUNTY = c("St. Louis County")
+)
+```
+As the variable name is very lengthy I am storing this data into "value".
+```{r}
+value <- St_Louis_County_data$VALUE
+```
+Calculating z_score with the Formula and storing in the "z_score" variable. 
+```{r}
+z_score <- (value - mean_dist) / sd_dist
+z_score
+```
+Interpretation of z_score is that we compare it to the standard normal distribution.
+If the z-score is positive, it indicates that the value (distance to the needle exchange in this case) is above the mean. If the z-score is negative, it means the value is below the mean.
+In our case z_score is -1.067093 which is negative, it means that  the distance is 1.067 standard deviations below the mean.
+
+# 3) find mean, standard deviation, standard error of distance for the sample by taking random sample of 500 counties.
+
+Set the seed for reproducibility
+```{r}
+set.seed(143)
+```
+Randomly sample 500 counties
+```{r}
+sample_size <- 500
+sample_data <- data[sample(3214, 500), ]
+```
+Calculate the mean, standard deviation, and standard error
+```{r}
+mean_sample <- mean(sample_data$VALUE)
+sd_sample <- sd(sample_data$VALUE)
+se_sample <- sd_sample / sqrt(sample_size)
+```
+Output the results
+```{r}
+mean_sample
+sd_sample
+se_sample
+```
+# 4) Comparing population mean for VALUE with the sample mean and sample standard error.
+
+Compare population mean with sample mean
+As the mean difference is positive it indicates that the sample mean is higher than the population mean.
+```{r}
+mean_difference <- mean_sample - mean_dist
+```
+Calculate the z-score using the sample standard error
+
+z_score for the mean difference is positive so it suggests that sample mean is above the population mean by 3.96 standard errors.
+```{r}
+z_score <- mean_difference / se_sample
+```
+Output the results
+```{r}
+mean_difference
+z_score
+```
+# 5) Compute 95% confidence interval around sample mean for distance to needle exchange. Interpret the mean and confidence interval.
+
+sample size
+```{r}
+sample_size <- length(data$VALUE)
+```
+Degrees of freedom
+```{r}
+df <- sample_size - 1
+```
+Critical value for 95% confidence level (t-distribution)
+```{r}
+critical_value <- qt(0.975, df)
+```
+Margin of error
+```{r}
+margin_of_error <- critical_value * se_sample
+```
+
+In this code, I've used the qt() function to find the critical value for the desired confidence level based on the sample size (assuming you have a sample size available). Then, I multiplied the critical value by the sample standard error to calculate the margin of error.
+
+Confidence interval
+```{r}
+confidence_interval <- c(mean_sample - margin_of_error, mean_sample +   margin_of_error)
+```
+Interpretation
+```{r}
+cat("The mean distance to needle exchange is", round(mean_sample, 2),    "with a 95% confidence interval of", round(confidence_interval[1],     2), "to", round(confidence_interval[2], 2), "\n")
+```
+
+# 6) Take 100 samples with an adequate number of observations per sample. Compute and graph it.
+
+Specify the number of observations per sample and the number of samples
+```{r}
+num_observations <- 30
+num_samples <- 100
+```
+Create an empty vector to store the sample means
+```{r}
+sample_means <- vector()
+```
+Perform sampling and compute sample means
+```{r}
+for (i in 1:num_samples) {
+  sample <- sample(data$VALUE, num_observations)
+  sample_means[i] <- mean(sample)
+}
+```
+Adjust plot margins
+```{r}
+par(mar = c(2, 1, 1, 0.5) + 0.1)
+```
+Plot the distribution of sample means
+```{r}
+hist <- hist(sample_means, breaks = 15, main = "Distribution of Sample Means", xlab = "Sample Means", col = "lightblue")
+```
+
+Add a vertical line at the population mean
+```{r}
+plot(hist, col = "lightblue") + abline(v = mean(data$VALUE), col = "red")
+```
+
+The hist() function is then used to plot the distribution of the sample means. The main title and x-axis label are added for clarity, and 15 breaks are specified in order to create the histogram.
+
+Because of the Central Limit Theorem (CLT), it is predicted that the sample means’ distribution will resemble a normal distribution. This expectation holds true regardless of how the original population was distributed. According to the CLT, even when the population distribution is non-normal, as the sample size grows, the distribution of the sample means tends toward a normal distribution. This is accurate if the sampling is random and the sample size is large enough.
+
+As a result, we can see that the distribution of sample means exhibits a bell-shaped, roughly normal distribution by sampling 100 samples with 30 observations per sample. This exemplifies the CLT’s powerful property, which enables us to draw valid conclusions about the population from the distribution of sample means.
