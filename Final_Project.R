@@ -176,7 +176,46 @@ head(replaced_outliers)
 
 best_performance <- replaced_outliers
 # g) Find the best performing variables/features using a correlogram.
+# Install and load the corrplot package
 
+# Install the corrplot package
+#install.packages("corrplot")
+library(corrplot)
+## corrplot 0.92 loaded
+# Compute the correlation matrix
+cor_matrix <- cor(best_performance[, ])
+
+cor_matrix
+
+# Create the correlogram
+corrplot(cor_matrix, method = "circle", type = "upper", tl.col = "black")
+
+# Compute pairwise correlations
+cor_matrix <- cor(best_performance[, ], use = "pairwise.complete.obs")
+
+# Find the absolute correlations for each variable
+cor_abs <- apply(cor_matrix, 2, function(x) abs(x))
+
+# Sort the variables based on the maximum correlation
+best_variables <- names(sort(apply(cor_abs, 2, max), decreasing = TRUE))[1:5]
+
+# Print the best performing variables
+print(cat("Best performing variables:" , best_variables))
+
+# Standardize your features to Gaussian distribution. Explain why it would be a good idea to standardize the features to Gaussian distribution.
+
+standardized_variables <- best_variables
+
+# Select only the variables in standardized_variables from your dataset
+selected_data <- best_performance [, standardized_variables]
+
+# Standardize the selected variables using scale()
+standardized_data <- scale(selected_data)
+
+# Update the standardized values in the original dataset
+best_performance[, best_variables] <- standardized_data
+
+best_performance
 
 
 
