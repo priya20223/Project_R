@@ -202,7 +202,7 @@ best_variables <- names(sort(apply(cor_abs, 2, max), decreasing = TRUE))[1:5]
 # Print the best performing variables
 print(cat("Best performing variables:" , best_variables))
 
-# Standardize your features to Gaussian distribution. Explain why it would be a good idea to standardize the features to Gaussian distribution.
+# h) Standardize your features to Gaussian distribution. Explain why it would be a good idea to standardize the features to Gaussian distribution.
 
 standardized_variables <- best_variables
 
