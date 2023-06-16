@@ -1,0 +1,311 @@
+---
+title: "Project Temp"
+author: "Tharushi Modaragamage"
+date: "2023-05-25"
+output: word_document
+---
+
+```{r}
+require (ggplot2)
+```
+
+
+### (a). Load the dataset in R Studio. Examine the first few rows of data using R. Explain your findings. Did you notice anything abnormal or interesting?
+```{r}
+patients <- read.csv("C:\\Users\\tharu\\Desktop\\CIS690\\RStudio\\Project\\patients.csv")
+head(patients)
+```
+
+### (b). Provide summary statistics. Calculate the mean, median, standard deviation, and quartiles for each independent variable. Explain your results.
+```{r}
+summary(patients)
+standard_deviations <- sapply(patients, sd)
+standard_deviations
+```
+
+### (c) Using the ggplot2 library, create any five visualizations. Explain your reasoning for selecting those visualizations. Explain the output of each visualization. What are the insights your visualizations reveal about the dataset?
+```{r}
+ggplot(patients, aes(x = Pedigree)) +
+  geom_histogram(fill = "lightblue", color = "black") +
+  labs(x = "Pedigree", y = "Frequency") +
+  ggtitle("Distribution of Pedigree")
+
+ggplot(patients, aes(x = Diagnosis, y = Age)) +
+  geom_boxplot(fill = "lightblue", color = "black") +
+  labs(x = "Diagnosis", y = "Age") +
+  ggtitle("Age by Diagnosis")
+
+ggplot(patients, aes(y = BloodPressure, x = 1)) + geom_boxplot()
+
+
+ggplot(patients, aes(x = Age, y = Insulin)) +
+  geom_point(aes(color = Pregnancies)) +
+  labs(x = "Age", y = "Insulin") +
+  ggtitle("Age vs. Insulin")
+
+ggplot(patients, aes(x = Diagnosis)) +
+  geom_bar(fill = "lightblue", color = "orange") +
+  labs(x = "Pregnancies", y = "Count") +
+  ggtitle("Distribution of Pregnancies")
+
+
+
+```
+
+### (d) Find missing values for each independent variable and fill them with median values. The missing values for independent variables in the dataset are coded 0.
+
+```{r}
+independent_vars <- c("Pregnancies", "Glucose", "BloodPressure", "SkinThickness", "Insulin", "BMI", "Pedigree", "Age")
+missing_values <- patients[, independent_vars] == 0
+missing_counts <- colSums(missing_values)
+
+for (var in independent_vars) {
+  if (missing_counts[var] > 0) {
+    patients[missing_values[, var], var] <- median(patients[, var], na.rm = TRUE)
+  }
+}
+
+
+```
+
+
+### (e) Find outliers for each independent variable using the IQR rule. 
+
+```{r}
+outliers <- sapply(patients[, 1:8], function(x) {
+  iqr <- IQR(x)
+  upper_bound <- quantile(x, 0.75) + 1.5 * iqr
+  lower_bound <- quantile(x, 0.25) - 1.5 * iqr
+  sum(x > upper_bound | x < lower_bound)
+})
+
+print(outliers)
+
+```
+
+### (f) Replace outliers. Explain your approach.
+
+```{r}
+for (var in independent_vars) {
+  if (outliers[var] > 0) {
+    upper_bound <- quantile(patients[, var], 0.75) + 1.5 * IQR(patients[, var])
+    lower_bound <- quantile(patients[, var], 0.25) - 1.5 * IQR(patients[, var])
+    patients[patients[, var] > upper_bound | patients[, var] < lower_bound, var] <- median(patients[, var], na.rm = TRUE)
+  }
+}
+
+```
+
+### (g) Find the best performing variables/features using a correlogram. 
+
+```{r}
+library(corrplot)
+library(caret)
+cor_matrix <- cor(patients[, independent_vars])
+
+corrplot(cor_matrix, method = "circle", type = "upper", tl.col = "black")
+
+high_correlated_vars <- findCorrelation(cor_matrix, cutoff = 0.8)
+
+cat("Variables with high correlation:", paste(independent_vars[high_correlated_vars], collapse = ", "), "\n")
+
+cor_matrix2 <- cor(patients)
+
+corrplot(cor_matrix2, method = "circle", type = "upper", tl.col = "black")
+
+high_correlated_vars2 <- findCorrelation(cor_matrix2, cutoff = 0.8)
+cat("Variables with high correlation:", paste(independent_vars[high_correlated_vars2], collapse = ", "), "\n")
+
+high_correlated_vars2
+```
+
+
+### (h) Standardize your features to Gaussian distribution. Explain why it would be a good idea to standardize the features to Gaussian distribution.
+```{r}
+standardize <- function(x) {
+  (x - mean(x)) / sd(x)
+}
+
+patients[, independent_vars] <- apply(patients[,independent_vars], 2, standardize)
+
+```
+
+
+### (i) Create a logistic regression model (call it LRM1) using your best features. Describe your model. 
+```{r}
+best_features <- c("Pregnancies", "Glucose", "BMI", "Age" )
+
+LRM1 <- glm(Diagnosis ~ ., data = patients[, c("Diagnosis", best_features)], family = "binomial")
+
+summary(LRM1)
+```
+
+
+### (j) Create a classification report of your model
+```{r}
+predicted <- predict(LRM1, type = "response")
+
+predicted_labels <- ifelse(predicted >= 0.5, 1, 0)
+
+actual <- patients$Diagnosis
+classification_report <- confusionMatrix(data = factor(predicted_labels),
+                                         reference = factor(actual),
+                                         positive = "1")
+
+TP <- classification_report$table[2, 2]
+FP <- classification_report$table[1, 2]
+FN <- classification_report$table[2, 1]
+
+precision <- TP / (TP + FP)
+recall <- TP / (TP + FN)
+f1_score <- 2 * precision * recall / (precision + recall)
+support <- TP + FN
+
+cat("Precision:", precision, "\n")
+cat("Recall:", recall, "\n")
+cat("F1 Score:", f1_score, "\n")
+cat("Support:", support, "\n")
+
+print(classification_report)
+
+```
+
+### (k) Describe your classification report (precision, recall, F1 score, and support). 
+
+```{r}
+```
+
+
+### (l) Create the accuracy score of your model. Describe the accuracy score. 
+
+```{r}
+model_accuracy <- sum(predicted_labels == actual) / length(actual)
+
+cat("Accuracy:", model_accuracy, "\n")
+```
+
+### (m) Create another logistic regression model (call it LRM2). Use all the independent features this time (instead of your best performing features). 
+
+```{r}
+#WITH Testing and training data
+
+# Splitting the dataset into training and testing
+set.seed(123)
+
+#70% of the data is used for training and then the rest for testing
+training_indices <- sample(nrow(patients), 0.7 * nrow(patients))  
+training_data <- patients[training_indices, ]
+testing_data <- patients[-training_indices, ]
+
+# Building second regression model (LRM2) with all the features
+LRM2 <- glm(Diagnosis ~ ., data = training_data, family = binomial)
+summary(LRM2)
+
+# Making predictions based on the testing data
+predictions1 <- predict(LRM2, newdata = testing_data, type = "response")
+predictions1
+
+# Using 0.5 threshold to convert probabilities to class labels of 0 or 1
+predicted_classes <- ifelse(predictions1 > 0.5, 1, 0)
+predicted_classes
+
+# Evaluating the model's performance
+library(caret)
+actualdiagnosis <- patients$Diagnosis
+actualdiagnosis
+classification_report <- confusionMatrix(data = factor(predicted_classes), reference = factor(testing_data$Diagnosis), positive = "1")
+
+# Calculating the precision, recall, F1 score, and support
+precision1 <- classification_report$byClass["Pos Pred Value"]
+recall1 <- classification_report$byClass["Sensitivity"]
+f1_score1 <- classification_report$byClass["F1"]
+support1 <- classification_report$byClass["Support"]
+
+cat("Precision:", precision1, "\n")
+cat("Recall:", recall1, "\n")
+cat("F1 Score:", f1_score1, "\n")
+cat("Support:", support1, "\n")
+
+print(classification_report)
+
+```
+
+### (n) Compare the two models (LRM1 and LRM2) based on the classification report and accuracy score. Which one is a better model? Why? 
+```{r}
+```
+
+### (o) Examine the coefficients to understand the direction and significance of the relationship between the predictor variables and the outcome variable.
+```{r}
+coef_LRM2 <- coef(LRM2)
+coef_LRM2
+```
+
+### (p) Perform and interpret hypothesis tests that your model is significantly better. Explain the test statistic, degrees of freedom, and p-value associated with the hypothesis test.
+```{r}
+# Likelihood Ratio Test
+nullmodel <- glm(Diagnosis ~ 1, data = training_data, family = binomial)
+chisq_null_LRM2 <- anova(nullmodel, LRM2, test = "Chisq")
+LR_pvalue <- chisq_null_LRM2$Pr[2]
+#LR_pvalue
+
+# Wald Test (example for one predictor variable - Pregnancies)
+wald_test <- coef(summary(LRM2))["Pregnancies", "Pr(>|z|)"]
+#wald_test
+
+cat("Likelihood Ratio Test pvalue:", LR_pvalue, "\n")
+cat("Wald Test pvalue (Pregnancies):", wald_test, "\n")
+
+
+```
+
+### (q) After conducting the hypothesis tests, adjust the significance level for multiple comparisons using the Bonferroni correction. Use significance level = 0.05.
+```{r}
+no_hypothesis_tests <- 2
+
+adjusted_sl <- 0.05/no_hypothesis_tests
+
+# Comparing pvalues with adjusted significance levels
+if (LR_pvalue < adjusted_sl) {
+  cat("The likelihood Ratio Test is significant after Bonferroni correction\n")
+} else {
+  cat("The likelihood Ratio Test is not significant after Bonferroni correction\n")
+}
+
+if (wald_test < adjusted_sl) {
+  cat("The wald Test for pregnancies is significant after Bonferroni correction\n")
+} else {
+  cat("The Wald Test for pregnancies is not significant after Bonferroni correction\n")
+}
+
+```
+
+### (r) What would be your suggestions for further improving the accuracy of your chosen model?
+
+To further improve the accuracy of the chosen model:
+  - Add more data to increase the dataset so model training process can be improved and more generalized.
+  - We can try further transformations or other features that may contribute to gestational diabetes other than the features in the selected model.
+  - We can try out more classification algorithms to compare their performances.
+  - Try techniques such as Bayesian optimization on the hyper parameters of the the model.
+
+
+### (s) Conduct a literature review about how gestational diabetes is diagnosed in clinical settings. How do your model and predictive variables compare to clinical knowledge of diagnosing gestational diabetes? Cite your sources.
+
+```{r}
+
+```
+
+### (t) What would be the pitfalls or weaknesses of your model if the hospital decided to deploy it to predict diabetes?
+
+Some pitfalls or weaknesses of the chosen model would be:
+  - The possibility of false negatives and positives resulting.
+  - Inability to generalize with populations that maybe different to what the model is trained with.
+  
+
+### (u) If you were to present your analysis and findings to the CEO of the hospital, what would be your top five key points? Create a PowerPoint presentation and video that highlight your keypoints, insights, and problem-solving approach in the context of business goals (e.g.,reducing cost and improving patient care).
+
+-Almost 80% accuracy in predicting the likelihood of gestational diabetes in women who are pregnant.
+-The features that presented a higher significance to the model were ....
+-The model showed the ability to identify positive cases correctly when analyzing classification report.
+-Overall the model is effective in predicting the gestational diabetes.
+-Further improvements for the model will be to tune the hyper parameters, more data collection and methods to enhance the performance of the model.
+
