@@ -176,6 +176,79 @@ head(replaced_outliers)
 
 best_performance <- replaced_outliers
 # g) Find the best performing variables/features using a correlogram.
+#splitting the dataset into training and testing data (70:30)
+#install.packages("caret")
+library(caret)
+set.seed(1234)
+dindex <- createDataPartition(standardized_data$Diagnosis, p=0.7, list=FALSE)
+train_data <- standardized_data[dindex,]
+test_data <- standardized_data[-dindex,]
+#i)Model_1 using correlation plot
+
+best_features <- c( "BMI", "Age", "Pregnancies", "Glucose")
+best_features_subset_data <- train_data[, c("Diagnosis", best_features)] 
+#View(best_features_subset_data)
+
+#LRM1 - using best features
+LRM1 <- glm(Diagnosis ~ ., data = best_features_subset_data , family = binomial) 
+
+# Print the summary of the model 
+summary(LRM1)
+
+#j & k
+#install.packages("pROC")  # Install the pROC package
+library(pROC)  # Load the pROC package
+predictions <- predict(LRM1, newdata = test_data, type = "response")
+predicted.classes <- ifelse(predictions> 0.5, 1, 0)
+predicted.classes
+
+library(caret)
+confusion_matrix <- table(predicted.classes, test_data$Diagnosis)
+confusion_matrix
+
+precision <- confusion_matrix[2, 2] / sum(confusion_matrix[, 2])
+recall <- confusion_matrix[2, 2] / sum(confusion_matrix[2, ])
+f1_score <- 2 * precision * recall / (precision + recall)
+support <- rowSums(confusion_matrix)
+
+# Print the classification report
+cat("Precision: ", precision, "\n")
+cat("Recall: ", recall, "\n")
+cat("F1-Score: ", f1_score, "\n")
+cat("Support: ", support)
+
+#l
+#accuracy of model1- LRM1 
+accuracy <- sum(diag(confusion_matrix)) / sum(confusion_matrix)
+cat("Accuracy: ", accuracy, "\n")
+#m)model 2
+#LRM2 - using all features
+LRM2 <- glm(Diagnosis ~ ., data = train_data , family = binomial) 
+#print the summary of the model
+summary(LRM2)
+
+#m)
+predictions_model2 <- predict(LRM2, newdata = test_data, type = "response")
+predicted.classes_model2 <- ifelse(predictions_model2> 0.5, 1, 0)
+predicted.classes_model2
+
+library(caret)
+confusion_matrix_model2 <- table(predicted.classes_model2, test_data$Diagnosis)
+confusion_matrix_model2
+
+precision <- confusion_matrix_model2[2, 2] / sum(confusion_matrix_model2[, 2])
+recall <- confusion_matrix_model2[2, 2] / sum(confusion_matrix_model2[2, ])
+f1_score <- 2 * precision * recall / (precision + recall)
+support <- rowSums(confusion_matrix_model2)
+
+# Print the classification report
+cat("Precision: ", precision, "\n")
+cat("Recall: ", recall, "\n")
+cat("F1-Score: ", f1_score, "\n")
+
+#Accuracy of model2 - lRM2
+accuracy <- sum(diag(confusion_matrix_model2)) / sum(confusion_matrix_model2)
+cat("Accuracy: ", accuracy, "\n")
 
 
 
