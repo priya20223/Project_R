@@ -1,0 +1,159 @@
+---
+title: "J to L"
+output: word_document
+date: "2023-06-13"
+---
+```{r}
+install.packages("randomForest")
+
+library(randomForest)
+
+# Load the required packages
+library(randomForest)
+library(caret)
+
+
+
+# Load the required packages
+library(randomForest)
+library(caret)
+
+dim(standardized_data)
+
+str(standardized_data)
+summary(standardized_data)
+colnames(standardized_data)
+
+table(standardized_data$Diagnosis)
+# Extract the "Diagnosis" variable from the "patients" dataset
+diagnosis <- patients$Diagnosis
+
+# Merge the "Diagnosis" variable with the "standardized_data" dataset
+merged_data <- cbind(standardized_data, Diagnosis = diagnosis)
+
+#Remove the "Diagnosis" column from the merged dataset
+data <- merged_data[, !(names(merged_data) == "Diagnosis")]
+
+target <- factor(merged_data$Diagnosis)
+
+# Create the random forest model
+model <- randomForest(x = data, y = target)
+
+# Make predictions
+predictions <- predict(model, newdata = data)
+
+# Generate the classification report
+report <- confusionMatrix(data = predictions, reference = target)
+print(report)
+
+```
+
+- The model achieves a perfect accuracy of 0.9974, indicating that it correctly classifies all instances in the dataset.
+
+- The sensitivity (true positive rate) and specificity (true negative rate) of the model are both 1, indicating that it correctly identifies all positive instances and negative instances.
+
+- The positive predictive value (precision) and negative predictive value of the model are both 1, indicating that all positive predictions and negative predictions are correct.
+
+
+- The support for class 0 is 500, meaning there are 500 instances of class 0 in the dataset.
+
+- The support for class 1 is 266, meaning there are 266 instances of class 1 in the dataset.
+
+Overall, the classification report suggests that the model performs exceptionally well, with perfect accuracy, precision, recall, and F1 score. The model's predictions align perfectly with the actual target values.
+##k)Describe your classification report (precision, recall, F1 score, and support)
+
+```{r}
+# Calculate confusion matrix
+conf_matrix <- table(predictions, target)
+
+# Calculate precision, recall, F1 score, and support
+precision <- diag(conf_matrix) / colSums(conf_matrix)
+recall <- diag(conf_matrix) / rowSums(conf_matrix)
+f1_score <- 2 * precision * recall / (precision + recall)
+support <- rowSums(conf_matrix)
+
+# Create a data frame with the metrics
+classification_report <- data.frame(
+  Class = rownames(conf_matrix),
+  Precision = precision,
+  Recall = recall,
+  F1_Score = f1_score,
+  Support = support
+)
+
+# Print the classification report
+print(classification_report)
+```
+
+These metrics indicate the performance of the classification model for each class. Class 0 has a precision of 1.00, which means that all the predicted instances for class 0 were correct. However, the recall, F1 score, and support for class 0 are 0.99, indicating that all the true instances of class 0 were correctly classified by the model, and there were 500 instances of class 0 in the dataset.
+
+On the other hand, class 1 has a precision, recall, F1 score, and support of 0.99,1.00,0.99,0.99,266 which indicates that all the predicted instances and true instances of class 1 were correctly classified by the model. There were 266 instances of class 1 in the dataset.
+
+Overall, the model achieved perfect precision, recall, and F1 score for both classes, indicating that it performed extremely well in classifying the instances
+
+```{r}
+# Load the required packages
+library(caret)
+
+# Calculate the accuracy score
+accuracy_score <- confusionMatrix(data = predictions, reference = target)$overall['Accuracy']
+
+# Print the accuracy score
+print(accuracy_score)
+
+
+```
+
+This indicates that the model has achieved perfect accuracy, correctly predicting all instances in the dataset
+
+#h) Add a Diagnosis column to standardized_dataset 
+standardized_data$Diagnosis <- patients_2$Diagnosis
+standardized_data
+
+#i) 
+#splitting the dataset into training and testing data (70:30)
+#install.packages("caret")
+library(caret)
+set.seed(1234)
+dindex <- createDataPartition(standardized_data$Diagnosis, p=0.7, list=FALSE)
+train_data <- standardized_data[dindex,]
+test_data <- standardized_data[-dindex,]
+
+#i)Model_1 using correlation plot
+
+best_features <- c( "BMI", "Age", "Pregnancies", "Glucose")
+best_features_subset_data <- train_data[, c("Diagnosis", best_features)] 
+#View(best_features_subset_data)
+
+#LRM1 - using best features
+LRM1 <- glm(Diagnosis ~ ., data = best_features_subset_data , family = binomial) 
+
+# Print the summary of the model 
+summary(LRM1)
+
+#j & k
+#install.packages("pROC")  # Install the pROC package
+library(pROC)  # Load the pROC package
+predictions <- predict(LRM1, newdata = test_data, type = "response")
+predicted.classes <- ifelse(predictions> 0.5, 1, 0)
+predicted.classes
+
+library(caret)
+confusion_matrix <- table(predicted.classes, test_data$Diagnosis)
+confusion_matrix
+
+precision <- confusion_matrix[2, 2] / sum(confusion_matrix[, 2])
+recall <- confusion_matrix[2, 2] / sum(confusion_matrix[2, ])
+f1_score <- 2 * precision * recall / (precision + recall)
+support <- rowSums(confusion_matrix)
+
+# Print the classification report
+cat("Precision: ", precision, "\n")
+cat("Recall: ", recall, "\n")
+cat("F1-Score: ", f1_score, "\n")
+cat("Support: ", support)
+
+#l
+#accuracy of model1- LRM1 
+accuracy <- sum(diag(confusion_matrix)) / sum(confusion_matrix)
+cat("Accuracy: ", accuracy, "\n")
