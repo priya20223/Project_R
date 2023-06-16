@@ -194,6 +194,7 @@ recall <- confusion_matrix_model3[2, 2] / sum(confusion_matrix_model3[2, ])
 f1_score <- 2 * precision * recall / (precision + recall)
 support <- rowSums(confusion_matrix_model3)
 
+
 # Print the classification report
 cat("Accuracy: ", accuracy, "\n")
 cat("Precision: ", precision, "\n")
