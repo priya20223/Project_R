@@ -176,6 +176,60 @@ head(replaced_outliers)
 
 best_performance <- replaced_outliers
 # g) Find the best performing variables/features using a correlogram.
+library(corrplot)
+#correlation_matrix <- cor(best_performance)
+
+# Select the variables of interest
+variables_of_interest <- c("Pregnancies", "Glucose", "BloodPressure", "SkinThickness", "Insulin", "BMI", "Pedigree", "Age")
+
+# Subset the dataset to include only the selected variables
+subset_data <- best_performance[, variables_of_interest]
+
+# Calculate the correlation matrix
+correlation_matrix <- cor(subset_data)
+correlation_matrix
+
+#g)
+# Install and load the ggplot2 package
+#install.packages("ggplot2")
+library(ggplot2)
+library(corrplot)
+
+# Create the correlation plot using a heatmap
+
+#corrplot(correlation_matrix, method = "color")
+#corMat = cor (best_performance[, -9])
+corMat = cor (best_performance)
+diag (corMat) = 0 #Remove self correlations
+corrplot.mixed(corMat,tl.pos = "lt")
+patients_2 <- best_performance
+
+#h) Standardizing variables
+
+# Standardize the selected variables to Gaussian distribution 
+standardized_data <- scale(patients_2[, -9])
+
+# Convert the standardized data back to a data frame 
+standardized_data <- as.data.frame(standardized_data) 
+
+# View the standardized data 
+print(standardized_data) 
+
+#h)
+#Guassian distribution - density plots for standardized data features
+plots <- lapply(standardized_data, function(var) { 
+  ggplot(data = standardized_data, aes(x = var)) +
+    geom_density(fill = "#DC143C", color = "black") +
+    theme_minimal() +
+    labs(x = "Standardized Value", y = "Density")
+})
+plots
+# Arrange the density plots in a grid
+#grid.arrange(grobs = plots, ncol = 3)
+
+#h) Add a Diagnosis column to standardized_dataset 
+standardized_data$Diagnosis <- patients_2$Diagnosis
+standardized_data
 #splitting the dataset into training and testing data (70:30)
 #install.packages("caret")
 library(caret)
